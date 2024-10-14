@@ -1,12 +1,9 @@
-import os
 import torch
 import torch.utils
 import torch.utils.data
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image, ImageFile
-import matplotlib as plt
-import numpy as np
 import time
 import torchvision.models as models
 import torch.nn as nn

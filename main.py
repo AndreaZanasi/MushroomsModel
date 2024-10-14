@@ -127,7 +127,7 @@ model = model.to(device)
 loss_fn = nn.CrossEntropyLoss()                     # Useful function for classification problems
 optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum=0.9, weight_decay=0.003) #lr most important parameter 
 
-train_nn(model, train_loader, test_loader, loss_fn, optimizer, 100)
+train_nn(model, train_loader, test_loader, loss_fn, optimizer, 35)
 
 # Save the model weights
 torch.save(model.state_dict(), 'model_weights.pth')

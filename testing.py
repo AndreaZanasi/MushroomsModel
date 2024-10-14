@@ -32,6 +32,17 @@ def predict_image(image_path, class_names):
 mushrooms_dir = r'Mushrooms'
 class_names = sorted(os.listdir(mushrooms_dir))
 
-image_path = r'path/to/image'
-predicted_class = predict_image(image_path, class_names)
-print(f'Predicted class: {predicted_class}')
+image_paths = [r'c:\Users\Utente\Desktop\Agaricus_campestris(fs-03).jpg',
+               r'c:\Users\Utente\Desktop\amanita-muscaria10.jpg',
+               r'c:\Users\Utente\Desktop\boletus-reticulatus1.jpg',
+               r'c:\Users\Utente\Desktop\Cortinarius_xanthodryophilus_db-01.jpg',
+               r'c:\Users\Utente\Desktop\entoloma-caeruleum1.jpg',
+               r'c:\Users\Utente\Desktop\Hygrocybe_coccinea(mgw-04).jpg',
+               r'c:\Users\Utente\Desktop\Lactarius-vellereus-11-X-2007-066.jpg',
+               r'c:\Users\Utente\Desktop\russula-seven.jpg',
+               r'c:\Users\Utente\Desktop\Suillus_granulatus.jpg']
+
+for image_path in image_paths:
+    actual_class = class_names[image_paths.index(image_path)]
+    predicted_class = predict_image(image_path, class_names)
+    print(f"Actual: {actual_class}, Predicted: {predicted_class}")

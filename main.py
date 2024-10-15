@@ -64,7 +64,12 @@ def train_nn(model, train_loader, test_loader, criterion, optimizer, epochs):
 
         print(f'-Training Data: Got {running_correct} out of {total} images. Accuracy: {epoch_accuracy}% Loss: {epoch_loss}')
         print(f'Epoch {epoch + 1} completed in {epoch_duration:.2f} seconds')
-        evaluate_model_on_test_set(model, test_loader)
+        
+        test_acc = evaluate_model_on_test_set(model, test_loader)
+        if test_acc == 100.0:
+            torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size},trainacc={epoch_accuracy},testacc={test_acc}).pth')
+            print("Test accuracy reached 100%. Stopping training.")
+            break
 
     print("Finished")
     return model
@@ -94,40 +99,49 @@ def evaluate_model_on_test_set(model, test_loader):
     print(f'-Testing Data:  Got {predicted_correctly_on_epoch} out of {total} images. Accuracy: {epoch_acc}%')
     print(f'Evaluation completed in {evaluation_duration:.2f} seconds')
 
+    return epoch_acc
 
-mean = [0.3914, 0.3697, 0.2815]
-std = [0.2291, 0.2094, 0.2031]
+
+
+mean = [0.0004, 0.0003, 0.0002]
+std = [1.0118, 1.0145, 1.0147]
+batch_size = 32
+image_size = 300
 
 train_transforms = transforms.Compose([
     # Size of images afflicts the performance of the model
-    transforms.Resize([224, 224]),
+    transforms.Resize([image_size, image_size]),
     transforms.ToTensor(),
     transforms.Normalize(torch.Tensor(mean), torch.Tensor(std))
     #transforms.RandomHorizontalFlip(), to random flip images to train on different types
 ])
 #Batch Size afflicts the performance of the model
 train_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=train_transforms)
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=32, shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 
 test_transforms = transforms.Compose([
-    transforms.Resize([224, 224]),
+    transforms.Resize([image_size, image_size]),
     transforms.ToTensor(),
     transforms.Normalize(torch.Tensor(mean), torch.Tensor(std))
 ])
 test_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=test_transforms)
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=32, shuffle=False)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
-
-model = models.resnet18(weights=None)           # Resnet18 model weights=None for not already trained
+weights = None
+model = models.resnet18(weights=weights)            # Resnet18 model weights=None for not already trained
 num_ftrs = model.fc.in_features                     # Size of each input sample
 number_of_classes = 9
 model.fc = nn.Linear(num_ftrs, number_of_classes)   # Prepare the matrices for forward propagation
 device = set_device()
 model = model.to(device)
 loss_fn = nn.CrossEntropyLoss()                     # Useful function for classification problems
-optimizer = optim.SGD(model.parameters(), lr = 0.01, momentum=0.9, weight_decay=0.003) #lr most important parameter 
+lr = 0.01
+momentum = 0.9
+weight_decay = 0.003
+epochs = 50
+optimizer = optim.SGD(model.parameters(), lr = lr, momentum=momentum, weight_decay=weight_decay) #lr most important parameter 
 
-train_nn(model, train_loader, test_loader, loss_fn, optimizer, 35)
+train_nn(model, train_loader, test_loader, loss_fn, optimizer, epochs)
 
 # Save the model weights
-torch.save(model.state_dict(), 'model_weights.pth')
+torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size}).pth')

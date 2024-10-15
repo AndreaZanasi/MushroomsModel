@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+saved = False
 
 def pil_loader(path):
     with open(path, 'rb') as f:
@@ -67,6 +68,7 @@ def train_nn(model, train_loader, test_loader, criterion, optimizer, epochs):
         
         test_acc = evaluate_model_on_test_set(model, test_loader)
         if test_acc == 100.0:
+            saved = True
             torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size},trainacc={epoch_accuracy},testacc={test_acc}).pth')
             print("Test accuracy reached 100%. Stopping training.")
             break
@@ -143,5 +145,5 @@ optimizer = optim.SGD(model.parameters(), lr = lr, momentum=momentum, weight_dec
 
 train_nn(model, train_loader, test_loader, loss_fn, optimizer, epochs)
 
-# Save the model weights
-torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size}).pth')
+if not saved:
+    torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size}).pth')

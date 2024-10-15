@@ -2,6 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from PIL import Image
 import os
+from colorama import Fore, Style
 import torchvision.models as models
 import torch.nn as nn
 
@@ -9,13 +10,13 @@ model = models.resnet18(weights=None)
 num_ftrs = model.fc.in_features
 number_of_classes = 9
 model.fc = nn.Linear(num_ftrs, number_of_classes)
-model.load_state_dict(torch.load('weights\model_weights(lr=0.01,mom=0.9,wd=0.003,pretr=None,bs=32,ep=50,size=300,trainacc=99.80637473935062,testacc=100.0).pth'))
+model.load_state_dict(torch.load(r'weights/model_weights(lr=0.01,mom=0.9,wd=0.003,pretr=Yes,bs=32,ep=10,size=250).pth'))
 model.eval() 
 
 preprocess = transforms.Compose([
-    transforms.Resize([300, 300]),
+    transforms.Resize([250, 250]),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.0004, 0.0003, 0.0002], std=[1.0118, 1.0145, 1.0147])
+    transforms.Normalize(mean=[0.0208, 0.0254, 0.0203], std=[0.9948, 0.9935, 0.9932])
 ])
 
 def predict_image(image_path, class_names):
@@ -42,7 +43,18 @@ image_paths = [r'c:\Users\Utente\Desktop\Agaricus_campestris(fs-03).jpg',
                r'c:\Users\Utente\Desktop\russula-seven.jpg',
                r'c:\Users\Utente\Desktop\Suillus_granulatus.jpg']
 
+correct_predictions = 0
+
 for image_path in image_paths:
     actual_class = class_names[image_paths.index(image_path)]
     predicted_class = predict_image(image_path, class_names)
-    print(f"Actual: {actual_class}, Predicted: {predicted_class}")
+    
+    if actual_class == predicted_class:
+        print(f"{Fore.GREEN}Actual: {actual_class}, Predicted: {predicted_class}{Style.RESET_ALL}")
+        correct_predictions += 1
+    else:
+        print(f"{Fore.RED}Actual: {actual_class}, Predicted: {predicted_class}{Style.RESET_ALL}")
+
+total_images = len(image_paths)
+accuracy = correct_predictions / total_images
+print(f"Accuracy: {correct_predictions}/{total_images} ({accuracy:.2%})")

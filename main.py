@@ -67,7 +67,7 @@ def train_nn(model, train_loader, test_loader, criterion, optimizer, epochs):
         print(f'Epoch {epoch + 1} completed in {epoch_duration:.2f} seconds')
         
         test_acc = evaluate_model_on_test_set(model, test_loader)
-        if test_acc >= 95.00:
+        if test_acc >= 98.00 and epoch_accuracy >= 98.00:
             saved = True
             torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size},trainacc={epoch_accuracy},testacc={test_acc}).pth')
             print("Test accuracy reached 100%. Stopping training.")
@@ -103,19 +103,16 @@ def evaluate_model_on_test_set(model, test_loader):
 
     return epoch_acc
 
-
-
-mean = [0.0208, 0.0254, 0.0203]
-std = [0.9948, 0.9935, 0.9932]
+mean = [0.2787, 0.2223, 0.1592]
+std = [0.2433, 0.2235, 0.2131]
 batch_size = 32
-image_size = 250
+image_size = 350
 
 train_transforms = transforms.Compose([
     # Size of images afflicts the performance of the model
     transforms.Resize([image_size, image_size]),
     transforms.ToTensor(),
-    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std))
-    #transforms.RandomHorizontalFlip(), to random flip images to train on different types
+    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std)),
 ])
 #Batch Size afflicts the performance of the model
 train_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=train_transforms)
@@ -124,7 +121,7 @@ train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=bat
 test_transforms = transforms.Compose([
     transforms.Resize([image_size, image_size]),
     transforms.ToTensor(),
-    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std))
+    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std)),
 ])
 test_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=test_transforms)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
@@ -140,8 +137,25 @@ loss_fn = nn.CrossEntropyLoss()                     # Useful function for classi
 lr = 0.01
 momentum = 0.9
 weight_decay = 0.003
-epochs = 10
+epochs = 50
 optimizer = optim.SGD(model.parameters(), lr = lr, momentum=momentum, weight_decay=weight_decay) #lr most important parameter 
+
+# Calculate the mean and the standard deviation for each batch and calculate average
+def get_mean_and_std(loader): #resize 224, 224
+    mean = 0
+    std = 0
+    total_images_count = 0
+    for images, _ in loader:
+        image_count_in_batch = images.size(0)
+        images = images.view(image_count_in_batch, images.size(1), -1)
+        mean += images.mean(2).sum(0)
+        std += images.std(2).sum(0)
+        total_images_count += image_count_in_batch
+    
+    mean /= total_images_count
+    std /= total_images_count
+
+    return mean, std
 
 train_nn(model, train_loader, test_loader, loss_fn, optimizer, epochs)
 

@@ -31,6 +31,7 @@ This repository contains code for training and evaluating a deep learning model 
    pip install torch torchvision pillow colorama
 
 Run the main.py script to start training
+If you want to test, edit testing.py putting your test directory and run  
 
 License
 This project is licensed under the MIT License.

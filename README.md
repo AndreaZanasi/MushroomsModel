@@ -30,7 +30,6 @@ This repository contains code for training and evaluating a deep learning model 
    ```sh
    pip install torch torchvision pillow colorama
    ```
-
 2. Prepare your dataset:
    - Place your training images in the `Mushrooms/` directory, organized by class.
    - Ensure the `Mushrooms/` directory is not tracked by Git by adding it to `.gitignore`.

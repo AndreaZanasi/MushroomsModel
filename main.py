@@ -1,103 +1,161 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
+import torch.utils
+import torch.utils.data
 import torchvision
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
+from PIL import Image, ImageFile
 import time
+import torchvision.models as models
+from torchvision.models import ResNet18_Weights
+import torch.nn as nn
+import torch.optim as optim
 
-# Define the neural network model
-class NeuralNet(nn.Module):
-    def __init__(self):
-        super(NeuralNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
-        self.conv3 = nn.Conv2d(64, 64, 3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(64 * 87 * 67, 512)  # Adjust the size based on the output of the conv layers
-        self.fc2 = nn.Linear(512, 128)
-        self.fc3 = nn.Linear(128, 10)  # Assuming 9 classes for the mushrooms dataset
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+saved = False
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
-        
-        # Flatten the output from the convolutional layers
-        x = x.view(-1, 64 * 87 * 67)  # Adjust the size based on the output of the conv layers
-        
-        # Apply fully connected layers with ReLU activation
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        
-        # Apply the final output layer
-        x = self.fc3(x)
-        return x
+def pil_loader(path):
+    with open(path, 'rb') as f:
+        try:
+            img = Image.open(f)
+            return img.convert('RGB')
+        except OSError as e:
+            print(f"Error loading image at {path}: {e}")
+            return None
+torchvision.datasets.folder.pil_loader = pil_loader
 
-def main():
-    # Define transformations for the input data
-    transform = transforms.Compose([
-        transforms.Resize((700, 541)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+def set_device():
+    if torch.cuda.is_available():
+        dev = "cuda:0"
+    else:
+        dev = "cpu"
+    return torch.device(dev)
 
-    train_data = torchvision.datasets.ImageFolder(
-        root='Mushrooms',
-        transform=transform
-    )
+def train_nn(model, train_loader, test_loader, criterion, optimizer, epochs):
+    device = set_device()
 
-    test_data = torchvision.datasets.ImageFolder(
-        root='Mushrooms',
-        transform=transform
-    )
-
-    train_loader = DataLoader(
-        train_data, batch_size=32, shuffle=True, num_workers=2
-    )
-
-    test_loader = DataLoader(
-        test_data, batch_size=32, shuffle=True, num_workers=2
-    )
-
-    model = NeuralNet()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    # Training loop
-    epochs = 10
     for epoch in range(epochs):
-        print(f"Starting epoch {epoch}")
+        start_time = time.time()
+        print(f'Starting epoch: {epoch + 1}')
+        model.train()
         running_loss = 0.0
-        image_counter = 0
-        t = time.time()  # Initialize time variable
+        running_correct = 0.0
+        total = 0
+        for data in train_loader:
+            images, labels = data
+            images = images.to(device)
+            labels = labels.to(device)
+            total += labels.size(0)
 
-        for images, labels in train_loader:
-            if image_counter % 10 == 0 and image_counter != 0:
-                print(f"Image {image_counter}")
-                print(f"Time per 10 images: {time.time() - t}")
-                t = time.time()
-            image_counter += 1
-
-            # Zero the parameter gradients
             optimizer.zero_grad()
 
-            # Forward pass
             outputs = model(images)
-            loss = criterion(outputs, labels)
+            _, predicted = torch.max(outputs.data, 1)
 
-            # Backward pass and optimization
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
             running_loss += loss.item()
+            running_correct += (labels==predicted).sum().item()
+        
+        epoch_loss = running_loss/len(train_loader)
+        epoch_accuracy = 100.00 * running_correct /  total
 
-        print(f'Epoch {epoch+1}, Loss: {running_loss/len(train_loader)}')
-    print('Finished Training')
+        end_time = time.time()
+        epoch_duration = end_time - start_time
 
-    # Save the model
-    torch.save(model.state_dict(), 'mushroom_model.pth')
+        print(f'- Training Data: Got {running_correct} out of {total} images. Accuracy: {epoch_accuracy}% Loss: {epoch_loss}')
+        print(f'Epoch {epoch + 1} completed in {epoch_duration:.2f} seconds')
+        
+        test_acc = evaluate_model_on_test_set(model, test_loader)
+        if test_acc >= 97.00 and epoch_accuracy >= 97.00:
+            saved = True
+            torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size},trainacc={epoch_accuracy},testacc={test_acc}).pth')
+            print("Test accuracy reached 100%. Stopping training.")
+            break
 
-if __name__ == '__main__':
-    main()
+    print("Finished")
+    return model
+
+def evaluate_model_on_test_set(model, test_loader):
+    model.eval()
+    predicted_correctly_on_epoch = 0
+    total = 0
+    device = set_device()
+
+    start_time = time.time()
+    with torch.no_grad():
+        for data in test_loader:
+            images, labels = data
+            images = images.to(device)
+            labels = labels.to(device)
+            total += labels.size(0)
+
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+
+            predicted_correctly_on_epoch += (predicted == labels).sum().item()
+    
+    epoch_acc = 100.00 * predicted_correctly_on_epoch / total
+    end_time = time.time()
+    evaluation_duration = end_time - start_time
+    print(f'- Testing Data: Got {predicted_correctly_on_epoch} out of {total} images. Accuracy: {epoch_acc}%')
+    print(f'Evaluation completed in {evaluation_duration:.2f} seconds')
+
+    return epoch_acc
+
+mean = [0.4639, 0.6601, 0.5745]
+std = [0.9625, 0.9623, 0.9794]
+batch_size = 32
+image_size = 400
+
+train_transforms = transforms.Compose([
+    transforms.Resize([image_size, image_size]),
+    transforms.ToTensor(),
+    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std)),
+])
+train_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=train_transforms)
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+test_transforms = transforms.Compose([
+    transforms.Resize([image_size, image_size]),
+    transforms.ToTensor(),
+    transforms.Normalize(torch.Tensor(mean), torch.Tensor(std)),
+])
+test_dataset = torchvision.datasets.ImageFolder(root='Mushrooms', transform=test_transforms)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
+
+weights = 'Yes'
+model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)            
+num_ftrs = model.fc.in_features                     
+number_of_classes = 9
+model.fc = nn.Linear(num_ftrs, number_of_classes)  
+device = set_device()
+model = model.to(device)
+loss_fn = nn.CrossEntropyLoss()                     
+lr = 0.01
+momentum = 0.9
+weight_decay = 0.003
+epochs = 50
+optimizer = optim.SGD(model.parameters(), lr = lr, momentum=momentum, weight_decay=weight_decay)
+
+def get_mean_and_std(loader):
+    mean = 0
+    std = 0
+    total_images_count = 0
+    for images, _ in loader:
+        image_count_in_batch = images.size(0)
+        images = images.view(image_count_in_batch, images.size(1), -1)
+        mean += images.mean(2).sum(0)
+        std += images.std(2).sum(0)
+        total_images_count += image_count_in_batch
+    
+    mean /= total_images_count
+    std /= total_images_count
+
+    return mean, std
+
+#Use everytime you change the size of the images or class/methods used in train_transforms
+#print(get_mean_and_std(train_loader))
+
+train_nn(model, train_loader, test_loader, loss_fn, optimizer, epochs)
+
+if not saved: torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size}).pth')

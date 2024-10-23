@@ -14,7 +14,7 @@ model.fc = nn.Linear(num_ftrs, number_of_classes)
 
 # Load the model weights with map_location
 model.load_state_dict(torch.load(
-    r'weights/model_weights(lr=0.01,mom=0.9,wd=0.003,pretr=Yes,bs=32,ep=50,size=350,trainacc=98.07864164432529,testacc=98.8978254393804).pth',
+    r'weights\model_weights(lr=0.01,mom=0.9,wd=0.003,pretr=Yes,bs=32,ep=50,size=400,trainacc=97.58713136729223,testacc=99.38933571641347).pth',
     map_location=torch.device('cpu'), 
     weights_only=True
 ))
@@ -22,9 +22,9 @@ model.eval()
 
 # Define the preprocessing steps
 preprocess = transforms.Compose([
-    transforms.Resize([350, 350]),
+    transforms.Resize([400, 400]),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.2787, 0.2223, 0.1592], std=[0.2433, 0.2235, 0.2131])
+    transforms.Normalize(mean=[0.4639, 0.6601, 0.5745], std=[0.9625, 0.9623, 0.9794])
 ])
 
 # Define the predict_image function

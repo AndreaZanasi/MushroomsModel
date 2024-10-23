@@ -67,7 +67,7 @@ def train_nn(model, train_loader, test_loader, criterion, optimizer, epochs):
         print(f'Epoch {epoch + 1} completed in {epoch_duration:.2f} seconds')
         
         test_acc = evaluate_model_on_test_set(model, test_loader)
-        if test_acc >= 98.00 and epoch_accuracy >= 98.00:
+        if test_acc >= 97.00 and epoch_accuracy >= 97.00:
             saved = True
             torch.save(model.state_dict(), f'weights/model_weights(lr={lr},mom={momentum},wd={weight_decay},pretr={weights},bs={batch_size},ep={epochs},size={image_size},trainacc={epoch_accuracy},testacc={test_acc}).pth')
             print("Test accuracy reached 100%. Stopping training.")
@@ -103,10 +103,10 @@ def evaluate_model_on_test_set(model, test_loader):
 
     return epoch_acc
 
-mean = [0.2787, 0.2223, 0.1592]
-std = [0.2433, 0.2235, 0.2131]
+mean = [0.4639, 0.6601, 0.5745]
+std = [0.9625, 0.9623, 0.9794]
 batch_size = 32
-image_size = 350
+image_size = 400
 
 train_transforms = transforms.Compose([
     # Size of images afflicts the performance of the model
@@ -156,6 +156,8 @@ def get_mean_and_std(loader): #resize 224, 224
     std /= total_images_count
 
     return mean, std
+
+#print(get_mean_and_std(train_loader))
 
 train_nn(model, train_loader, test_loader, loss_fn, optimizer, epochs)
 

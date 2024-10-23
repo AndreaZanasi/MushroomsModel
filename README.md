@@ -1,8 +1,8 @@
-# Mushroom Classification Model
+# 🍄 Mushroom Classification Model
 
 This repository contains code for training and evaluating a deep learning model to classify different types of mushrooms. The model is based on the ResNet-18 architecture and is trained using PyTorch.
 
-## Repository Structure
+## 📁 Repository Structure
 ### Files
 
 - **main.py**: This is the main script for training the model. It includes functions for setting up the device, loading data, training the model, and evaluating the model on the test set.
@@ -22,15 +22,40 @@ This repository contains code for training and evaluating a deep learning model 
 
 - **weights/**: Directory containing pre-trained model weights saved during training.
 
-## Usage
+## 🚀 Usage
 
-### Training the Model
+### 🏋️‍♂️ Training the Model
 
 1. Ensure you have the required dependencies installed:
    ```sh
    pip install torch torchvision pillow colorama
+   ```
 
-Run the main.py script to start training
+2. Prepare your dataset:
+   - Place your training images in the `Mushrooms/` directory, organized by class.
+   - Ensure the `Mushrooms/` directory is not tracked by Git by adding it to `.gitignore`.
 
-License
-This project is licensed under the MIT License.
+3. Run the `main.py` script to start training:
+   ```sh
+   python main.py
+   ```
+
+### 🧪 Testing the Model
+
+1. Ensure you have a `Test/` folder containing the images you want to test.
+
+2. Run the `testing.py` script to test the trained model on individual images:
+   ```sh
+   python testing.py
+   ```
+
+3. The `predict_image(image_path, class_names)` function will load a pre-trained model and predict the class of the given images.
+
+## 📂 Dataset Folder Structure
+
+- `Mushrooms/`: Contains subdirectories for each mushroom class with corresponding images.
+- `Test/`: Contains images for testing the trained model.
+
+## 📊 Model Weights
+
+- The `weights/` directory contains pre-trained model weights saved during training.
